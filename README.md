@@ -4,7 +4,7 @@ The rating pipeline behind Amaya Intelligence. Deterministic scoring core,
 document-ingest layer, and (soon) evidence-linked dimension agents for
 AI-durability ratings of operating companies.
 
-**Current status: Sessions 1–2 complete.**
+**Current status: Sessions 1–3 complete.**
 
 ```
  Data room ──▶ Ingest (Session 2) ──▶ Dimension agents (Session 3) ──▶ Scoring (Session 1) ──▶ Rating
@@ -28,8 +28,14 @@ Amaya Intelligence/
 │   │   ├── extract.py         # pdfplumber / python-docx / txt → chunks
 │   │   ├── classifier.py      # KeywordClassifier + AnthropicClassifier
 │   │   └── pipeline.py        # ingest(path) orchestrator
-│   └── cli.py                 # `amaya score|verify|methodology|ingest`
-├── tests/                     # 67 tests — scoring core + ingest pipeline
+│   ├── agents/                # Session 3: evidence → dimension + chain scores
+│   │   ├── completion.py      # Completion protocol (Anthropic + Stub)
+│   │   ├── prompts.py         # 12 dimension + 4 chain prompt specs, schemas
+│   │   ├── dimension.py       # score_dimension() — one dimension agent
+│   │   ├── chain.py           # score_chain_position() — one chain agent
+│   │   └── orchestrator.py    # rate() — runs all 16 agents concurrently
+│   └── cli.py                 # `amaya score|verify|methodology|ingest|rate`
+├── tests/                     # 99 tests — scoring + ingest + agents
 └── examples/
     ├── colabor_input.json     # sample pre-scored rating input
     └── sample_dataroom/       # 11 synthetic Colabor data-room documents
@@ -41,8 +47,15 @@ Amaya Intelligence/
 python -m venv .venv && source .venv/bin/activate
 pip install -e '.[dev]'
 
-# Run the full test suite (67 tests)
+# Run the full test suite (99 tests)
 pytest -v
+
+# --- Session 3: end-to-end rating from a data room ---
+
+# Requires ANTHROPIC_API_KEY; runs 16 agents in parallel (~30-60s, ~$1-3)
+export ANTHROPIC_API_KEY=sk-ant-...
+amaya rate examples/sample_dataroom --company "Colabor" --sector "Food Distribution"
+amaya rate examples/sample_dataroom --company "Colabor" --seal ./ledger
 
 # --- Session 2: ingest a data room ---
 
@@ -105,14 +118,26 @@ Every document chunk classified into exactly one of:
 | GOV   | Governance & Board   | SPS              |
 | OTHER | Uncategorized        | —                |
 
-Session 3 dimension agents pull evidence by section: the MCS agent reads
+Dimension agents pull evidence by section: the MCS agent reads
 MKT + COMP chunks; the RMV agent reads FIN + CUST; and so on.
+
+## The agent layer (Session 3)
+
+16 agents run concurrently via `asyncio.gather` — 12 dimension agents (one per
+ADI dimension) and 4 chain-position agents (upstream, downstream, lateral,
+end_consumer). Each agent receives only the evidence chunks from its declared
+sections, a dimension-specific rubric, and must call its own structured tool
+(`submit_<code>_score`) to emit score + rationale + confidence + evidence
+indices. No LangGraph — there's no state machine, no branching, no iterative
+refinement; just parallel structured calls.
+
+The `Completion` protocol cleanly separates agent logic from the LLM client.
+Production uses `AnthropicCompletion` (Claude Sonnet 4.6 with forced
+tool_choice); tests use `StubCompletion` with a user-supplied responder. Every
+agent test runs with zero network calls.
 
 ## Roadmap
 
-- **Session 3 — Dimension agents.** LangGraph orchestrator + 12 per-dimension
-  Claude Sonnet 4.6 agents + 4 chain-position agents. Output: full
-  `RatingInput` the Session 1 engine consumes. End-to-end: `amaya rate ./dataroom`.
 - **Session 4 — FastAPI backend.** REST + SSE for live progress.
 - **Session 5 — Next.js dashboard.** Upload flow, rating detail page,
   evidence explorer, provenance verify button.
