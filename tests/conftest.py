@@ -1,5 +1,8 @@
-"""Shared fixtures for scoring tests."""
+"""Shared fixtures — scoring core + API layer."""
 from __future__ import annotations
+
+from pathlib import Path
+from typing import Any, Callable
 
 import pytest
 
@@ -10,6 +13,8 @@ from amaya.schemas import (
     DimensionScore,
     RatingInput,
 )
+
+SAMPLE_ROOM = Path(__file__).parent.parent / "examples" / "sample_dataroom"
 
 ALL_DIMS = ["MCS", "CPS", "SCAE", "CLS", "VPR", "WCI", "RMV", "TSR",
             "LAL", "SPS", "ANCR", "DIM"]
@@ -49,3 +54,56 @@ def make_rating(
 @pytest.fixture
 def make_rating_fixture():
     return make_rating
+
+
+# ---------- API-layer fixtures ----------
+
+
+def _deterministic_responder(
+    score_by_tool: dict[str, int] | None = None,
+) -> Callable[[str, str], dict[str, Any]]:
+    score_by_tool = score_by_tool or {}
+
+    def responder(tool_name: str, _user: str) -> dict[str, Any]:
+        score = score_by_tool.get(tool_name, 5)
+        core = tool_name.removeprefix("submit_").removesuffix("_score")
+        is_chain = core in {"upstream", "downstream", "lateral", "end_consumer"}
+        resp: dict[str, Any] = {"score": score, "rationale": f"r for {tool_name}"}
+        if not is_chain:
+            resp["confidence"] = 0.8
+            resp["evidence_indices"] = []
+        return resp
+
+    return responder
+
+
+@pytest.fixture
+def sample_dataroom() -> Path:
+    return SAMPLE_ROOM
+
+
+@pytest.fixture
+def stub_completion_factory():
+    """Returns a builder so tests can customize scores."""
+    from amaya.agents.completion import StubCompletion
+
+    def _build(scores: dict[str, int] | None = None) -> StubCompletion:
+        return StubCompletion(responder=_deterministic_responder(scores))
+
+    return _build
+
+
+@pytest.fixture
+def api_client(stub_completion_factory, tmp_path: Path):
+    """TestClient with stubbed Completion and a fresh per-test ledger dir."""
+    from fastapi.testclient import TestClient
+
+    from amaya.api import create_app
+    from amaya.api.deps import get_completion, reset_registry
+
+    reset_registry()
+    app = create_app(ledger_root=tmp_path / "ledger")
+    app.dependency_overrides[get_completion] = lambda: stub_completion_factory()
+    with TestClient(app) as client:
+        yield client
+    reset_registry()

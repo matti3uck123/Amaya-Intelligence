@@ -9,6 +9,8 @@
   amaya ingest <path> --out evidence.json       # write result to file
   amaya rate <data-room-path> --company "X"     # end-to-end: ingest + agents + score
   amaya rate <path> --seal ./ledger             # also seal into provenance ledger
+  amaya serve                                    # start FastAPI backend
+  amaya serve --ledger ./ledger --port 8000     # with provenance + custom port
 """
 from __future__ import annotations
 
@@ -160,6 +162,28 @@ def cmd_rate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_serve(args: argparse.Namespace) -> int:
+    import uvicorn
+
+    from .api import create_app
+
+    ledger_root = Path(args.ledger).expanduser().resolve() if args.ledger else None
+    app = create_app(ledger_root=ledger_root)
+
+    print(
+        f"Amaya API starting on http://{args.host}:{args.port}",
+        file=sys.stderr,
+    )
+    if ledger_root:
+        print(f"  provenance ledger: {ledger_root}", file=sys.stderr)
+    else:
+        print("  provenance ledger: disabled (pass --ledger to enable sealing)", file=sys.stderr)
+    print(f"  docs: http://{args.host}:{args.port}/docs", file=sys.stderr)
+
+    uvicorn.run(app, host=args.host, port=args.port, log_level=args.log_level)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="amaya", description="ADI rating engine")
     p.add_argument("--version", action="version", version=f"amaya {__version__}")
@@ -207,6 +231,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     r.add_argument("--seal", help="if given, seal the resulting rating into this ledger dir")
     r.set_defaults(func=cmd_rate)
+
+    srv = sub.add_parser("serve", help="start the FastAPI backend")
+    srv.add_argument("--host", default="127.0.0.1", help="bind host")
+    srv.add_argument("--port", type=int, default=8000, help="bind port")
+    srv.add_argument(
+        "--ledger",
+        help="provenance ledger dir — required to support seal=true on POST /ratings",
+    )
+    srv.add_argument("--log-level", dest="log_level", default="info")
+    srv.set_defaults(func=cmd_serve)
 
     return p
 
