@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from sse_starlette.sse import EventSourceResponse
 
 from amaya.agents.completion import Completion
@@ -188,6 +188,33 @@ async def delete_rating(
         raise HTTPException(404, "rating not found")
     registry.drop(rating_id)
     return JSONResponse(content=None, status_code=204)
+
+
+@router.get("/{rating_id}/pdf")
+async def rating_pdf(
+    rating_id: str,
+    registry: JobRegistry = Depends(get_registry),
+) -> Response:
+    """One-page leave-behind PDF for a completed rating.
+
+    Generated deterministically from the stored `Rating` — same object
+    sealed in the ledger. Prospects get the paper artifact; analysts
+    get byte-identical proof the screen view and the PDF view came from
+    the same rating.
+    """
+    job = _require(registry, rating_id)
+    if job.rating is None:
+        raise HTTPException(409, f"rating {rating_id} is not complete (status={job.status})")
+
+    from amaya.reports import render_rating_pdf  # lazy import — reportlab is heavy
+
+    pdf_bytes = render_rating_pdf(job.rating)
+    filename = f"amaya-{rating_id}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{filename}"'},
+    )
 
 
 # ---------- helpers ----------

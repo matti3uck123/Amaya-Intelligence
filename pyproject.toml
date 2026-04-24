@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "amaya"
-version = "0.3.0"
-description = "ADI — AI Durability Index rating pipeline (scoring + ingest + agents + API)"
+version = "0.4.0"
+description = "ADI — AI Durability Index rating pipeline (scoring + ingest + agents + API + PDF reports)"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{name = "YVL Capital Partners"}]
@@ -19,6 +19,7 @@ dependencies = [
     "uvicorn[standard]>=0.27",
     "python-multipart>=0.0.9",
     "sse-starlette>=2.1",
+    "reportlab>=4.0",
 ]
 
 [project.optional-dependencies]

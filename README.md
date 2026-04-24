@@ -4,7 +4,7 @@ The rating pipeline behind Amaya Intelligence. Deterministic scoring core,
 document-ingest layer, and (soon) evidence-linked dimension agents for
 AI-durability ratings of operating companies.
 
-**Current status: Sessions 1–5 complete.**
+**Current status: Sessions 1–6 complete.**
 
 ```
  Data room ──▶ Ingest (Session 2) ──▶ Dimension agents (Session 3) ──▶ Scoring (Session 1) ──▶ Rating
@@ -40,12 +40,15 @@ Amaya Intelligence/
 │   │   ├── chain.py           # score_chain_position() — one chain agent
 │   │   └── orchestrator.py    # rate() — runs all 16 agents concurrently
 │   ├── api/                   # Session 4: FastAPI service with SSE progress
-│   │   ├── app.py             # create_app() — health, methodology, verify
-│   │   ├── ratings.py         # POST/GET /ratings + SSE event stream
+│   │   ├── app.py             # create_app() — health, methodology, verify, /demo/reset
+│   │   ├── ratings.py         # POST/GET /ratings + SSE event stream + /pdf
 │   │   ├── runner.py          # async background job runner
 │   │   ├── jobs.py            # in-memory registry + event bus
 │   │   ├── deps.py            # DI: completion, classifier, registry
+│   │   ├── seed.py            # Session 6: pre-load flagship (Colabor) ratings
 │   │   └── schemas.py         # API request/response DTOs
+│   ├── reports/               # Session 6: one-page PDF leave-behind (reportlab)
+│   │   └── pdf.py             # render_rating_pdf(rating) → bytes
 │   └── cli.py                 # `amaya score|verify|methodology|ingest|rate|serve`
 ├── dashboard/                 # Session 5: Next.js 14 App Router + Tailwind
 │   ├── app/
@@ -54,7 +57,7 @@ Amaya Intelligence/
 │   │   └── ratings/[id]/page.tsx  # live detail with SSE → agent grid → final report
 │   ├── components/            # GradeBadge, AgentGrid, DimensionDetail, ChainChart…
 │   └── lib/                   # typed API client, SSE hook, format helpers
-├── tests/                     # 126 tests — scoring + ingest + agents + API
+├── tests/                     # 141 tests — scoring + ingest + agents + API + PDF
 └── examples/
     ├── colabor_input.json     # sample pre-scored rating input
     └── sample_dataroom/       # 11 synthetic Colabor data-room documents
@@ -66,8 +69,15 @@ Amaya Intelligence/
 python -m venv .venv && source .venv/bin/activate
 pip install -e '.[dev]'
 
-# Run the full test suite (126 tests)
+# Run the full test suite (141 tests)
 pytest -v
+
+# --- Session 6: demo mode — flagship pre-loaded, PDF leave-behind ---
+
+# Terminal 1 — API with Colabor flagship pre-seeded
+amaya serve --ledger ./ledger --port 8000 --seed
+# GET  /ratings/{id}/pdf   (one-page PDF, ready to hand to a prospect)
+# POST /demo/reset         (wipe all ratings + re-seed flagships)
 
 # --- Session 5: run the dashboard + backend together ---
 
@@ -228,10 +238,26 @@ Key design choices:
   above the dimension detail with the specific cap it applied — the
   one thing a demo viewer should never miss.
 
-## Roadmap
+## Demo polish (Session 6)
 
-- **Session 6 — Demo polish.** Pre-loaded flagship ratings, PDF leave-behind
-  generator (WeasyPrint), landing page, one-click "reset demo."
+The rating engine is the product; the demo is how prospects feel it. Session 6
+wraps the pipeline in the controls a live pitch needs:
+
+- **Flagship pre-seeded.** `amaya serve --seed` loads the Colabor rating at
+  startup (status=done, full event history replayed) so the dashboard opens
+  on a realized A-grade rating instead of an empty list. The seed hook runs
+  via FastAPI's lifespan handler; `/demo/reset` drops every rating and
+  re-seeds flagships in one POST — a "reset" button sits in the header.
+- **PDF leave-behind.** `GET /ratings/{id}/pdf` renders a one-page A4 report
+  with the grade tile, score breakdown, dimension bars grouped by layer,
+  chain modifier, and any triggered circuit breakers. Pure reportlab (zero
+  native deps), <3 KB per page, byte-stable across renders modulo reportlab's
+  embedded `/ID`. A "PDF" button on the rating detail opens it in a new tab.
+- **Pure-function generator.** `render_rating_pdf(rating: Rating) -> bytes`
+  takes a `Rating` and nothing else — no methodology YAML reads, no clock,
+  no filesystem lookups. Tests assert `%PDF-` magic, `%%EOF` footer, and
+  structural-size stability across score ranges 1/5/10 and with circuit
+  breakers tripped.
 
 ## Cost to run
 

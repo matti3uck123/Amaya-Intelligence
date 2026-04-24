@@ -168,7 +168,7 @@ def cmd_serve(args: argparse.Namespace) -> int:
     from .api import create_app
 
     ledger_root = Path(args.ledger).expanduser().resolve() if args.ledger else None
-    app = create_app(ledger_root=ledger_root)
+    app = create_app(ledger_root=ledger_root, seed=args.seed)
 
     print(
         f"Amaya API starting on http://{args.host}:{args.port}",
@@ -178,6 +178,8 @@ def cmd_serve(args: argparse.Namespace) -> int:
         print(f"  provenance ledger: {ledger_root}", file=sys.stderr)
     else:
         print("  provenance ledger: disabled (pass --ledger to enable sealing)", file=sys.stderr)
+    if args.seed:
+        print("  flagship ratings: pre-loaded (Colabor)", file=sys.stderr)
     print(f"  docs: http://{args.host}:{args.port}/docs", file=sys.stderr)
 
     uvicorn.run(app, host=args.host, port=args.port, log_level=args.log_level)
@@ -240,6 +242,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="provenance ledger dir — required to support seal=true on POST /ratings",
     )
     srv.add_argument("--log-level", dest="log_level", default="info")
+    srv.add_argument(
+        "--seed",
+        action="store_true",
+        help="pre-load flagship ratings (Colabor) so the dashboard opens non-empty",
+    )
     srv.set_defaults(func=cmd_serve)
 
     return p

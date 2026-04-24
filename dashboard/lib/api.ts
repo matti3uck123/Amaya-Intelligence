@@ -121,4 +121,18 @@ export function eventsUrl(ratingId: string): string {
   return `${API_URL}/ratings/${encodeURIComponent(ratingId)}/events`;
 }
 
+export function pdfUrl(ratingId: string): string {
+  return `${API_URL}/ratings/${encodeURIComponent(ratingId)}/pdf`;
+}
+
+export interface ResetDemoResult {
+  dropped: string[];
+  seeded: string[];
+  seed_enabled: boolean;
+}
+
+export async function resetDemo(): Promise<ResetDemoResult> {
+  return request<ResetDemoResult>("/demo/reset", { method: "POST" });
+}
+
 export { ApiError };

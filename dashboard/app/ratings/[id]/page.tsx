@@ -11,7 +11,7 @@ import { DimensionDetail } from "@/components/DimensionDetail";
 import { GradeBadge } from "@/components/GradeBadge";
 import { ProgressBar } from "@/components/ProgressBar";
 import { StatusPill } from "@/components/StatusPill";
-import { ApiError, deleteRating } from "@/lib/api";
+import { ApiError, deleteRating, pdfUrl } from "@/lib/api";
 import {
   formatPercent,
   formatScore,
@@ -109,13 +109,27 @@ export default function RatingDetailPage() {
               ) : null}
             </div>
           </div>
-          <button
-            onClick={onDelete}
-            disabled={deleting}
-            className="btn-ghost text-grade-f hover:bg-grade-f/10 disabled:opacity-50"
-          >
-            {deleting ? "Deleting…" : "Delete"}
-          </button>
+          <div className="flex items-center gap-2">
+            {state.rating ? (
+              <a
+                href={pdfUrl(ratingId)}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-secondary"
+                title="Open the one-page PDF leave-behind"
+              >
+                <PdfIcon />
+                PDF
+              </a>
+            ) : null}
+            <button
+              onClick={onDelete}
+              disabled={deleting}
+              className="btn-ghost text-grade-f hover:bg-grade-f/10 disabled:opacity-50"
+            >
+              {deleting ? "Deleting…" : "Delete"}
+            </button>
+          </div>
         </div>
         {deleteError ? (
           <div className="card border-grade-f/40 bg-grade-f/10 p-3 text-sm text-grade-f">
@@ -321,6 +335,26 @@ function ScoreStat({
         {sub ? <span className="text-xs text-ink-500">{sub}</span> : null}
       </div>
     </div>
+  );
+}
+
+function PdfIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path d="M14 3v5h5" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path
+        d="M9 14h1.5a1.5 1.5 0 0 0 0-3H9v6m5-6v6m0-3h2m-2-3h2.5"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
+import { HeaderNav } from "@/components/HeaderNav";
 
 export const metadata: Metadata = {
   title: "Amaya Intelligence — ADI",
@@ -45,14 +46,7 @@ function Header() {
             </div>
           </div>
         </Link>
-        <nav className="flex items-center gap-1">
-          <Link href="/" className="btn-ghost">
-            Ratings
-          </Link>
-          <Link href="/new" className="btn-primary">
-            New rating
-          </Link>
-        </nav>
+        <HeaderNav />
       </div>
     </header>
   );
