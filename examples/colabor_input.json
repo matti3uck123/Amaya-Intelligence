@@ -1,0 +1,28 @@
+{
+  "rating_id": "adi-2026Q2-colabor-001",
+  "company_name": "Colabor Group",
+  "sector": "Food Distribution",
+  "analyst_notes": "Synthetic example drawn from deck live-rating sample.",
+  "dimension_scores": [
+    {"code": "MCS",  "score": 6, "rationale": "Category (foodservice distribution) stable; restaurant clients migrating to direct-supplier AI platforms but most SMB customers still need human-led rep model.", "confidence": 0.75},
+    {"code": "CPS",  "score": 5, "rationale": "Independent restaurant operators — softening demographic. SMB death rate rising under margin pressure.", "confidence": 0.8},
+    {"code": "SCAE", "score": 5, "rationale": "Upstream producers increasingly AI-mediated ordering; downstream ops partially automated.", "confidence": 0.7},
+    {"code": "CLS",  "score": 4, "rationale": "Sysco, US Foods investing in AI-driven customer platforms — replication pressure rising.", "confidence": 0.8},
+    {"code": "VPR",  "score": 6, "rationale": "Logistics + supplier network is genuinely hard to replicate; rep relationships are not.", "confidence": 0.75},
+    {"code": "WCI",  "score": 4, "rationale": "Heavy sales-rep headcount; AI-led ordering erodes this role.", "confidence": 0.8},
+    {"code": "RMV",  "score": 4, "rationale": "Margin on SKU-level distribution susceptible to marketplace compression.", "confidence": 0.7},
+    {"code": "TSR",  "score": 6, "rationale": "Modern ERP, some ML in demand forecasting.", "confidence": 0.7},
+    {"code": "LAL",  "score": 5, "rationale": "Leadership aware; published AI strategy language but no shipped product.", "confidence": 0.7},
+    {"code": "SPS",  "score": 4, "rationale": "Listed company, slow governance cycle for pivots.", "confidence": 0.75},
+    {"code": "ANCR", "score": 1, "rationale": "Zero evidence of AI-native client onboarding or agent-facing API surface.", "confidence": 0.9},
+    {"code": "DIM",  "score": 4, "rationale": "Warehouse + fleet footprint is moat; brand + data are not.", "confidence": 0.75}
+  ],
+  "chain": {
+    "positions": [
+      {"position": "upstream",     "score": 5, "rationale": "Producers adopting AI sales platforms."},
+      {"position": "downstream",   "score": 4, "rationale": "Operators migrating to direct channels."},
+      {"position": "lateral",      "score": 4, "rationale": "Larger competitors out-investing in AI."},
+      {"position": "end_consumer", "score": 6, "rationale": "End diners unchanged; they still eat at restaurants."}
+    ]
+  }
+}

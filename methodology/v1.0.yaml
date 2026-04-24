@@ -1,0 +1,80 @@
+version: "1.0.0"
+name: "ADI — AI Durability Index"
+effective_date: "2026-04-24"
+
+scoring:
+  dimension_scale: [1, 10]
+  final_scale: [0, 100]
+  formula: "raw = 10 * sum(score_i * weight_i); adjusted = raw * chain_modifier; final = min(adjusted, circuit_breaker_cap)"
+
+layers:
+  external_pressure:
+    weight: 0.40
+    dimensions:
+      MCS:  { name: "Market Category Survival",       weight: 0.14 }
+      CPS:  { name: "Client Profile Survivability",   weight: 0.12 }
+      SCAE: { name: "Supply Chain AI Exposure",       weight: 0.08 }
+      CLS:  { name: "Competitive Landscape Shift",    weight: 0.06 }
+  internal_resilience:
+    weight: 0.35
+    dimensions:
+      VPR:  { name: "Value Proposition Replicability", weight: 0.14 }
+      WCI:  { name: "Workforce Composition Impact",    weight: 0.08 }
+      RMV:  { name: "Revenue Model Vulnerability",     weight: 0.06 }
+      TSR:  { name: "Tech Stack Readiness",            weight: 0.07 }
+  adaptive_capacity:
+    weight: 0.25
+    dimensions:
+      LAL:  { name: "Leadership AI Literacy",          weight: 0.07 }
+      SPS:  { name: "Strategic Pivoting Speed",        weight: 0.07 }
+      ANCR: { name: "AI-Native Client Readiness",      weight: 0.05 }
+      DIM:  { name: "Defensible IP & Moat",            weight: 0.06 }
+
+circuit_breakers:
+  CB1:
+    description: "Market category being eliminated"
+    trigger: { MCS: { lte: 2 } }
+    cap: 35
+  CB2:
+    description: "Buyer disappearing"
+    trigger: { CPS: { lte: 2 } }
+    cap: 45
+  CB3:
+    description: "Value fully replicable at near-zero cost"
+    trigger: { VPR: { lte: 2 } }
+    cap: 40
+  CB4:
+    description: "Combined terminal condition (category dying AND value replicated)"
+    trigger: { MCS: { lte: 2 }, VPR: { lte: 2 } }
+    cap: 20
+
+chain_modifier:
+  range: [0.70, 1.15]
+  positions:
+    upstream:      { weight: 0.30 }
+    downstream:    { weight: 0.30 }
+    lateral:       { weight: 0.15 }
+    end_consumer:  { weight: 0.25 }
+  formula: "modifier = 0.70 + 0.45 * mean(position_score_normalized); each position scored 1-10"
+  escalation:
+    terminal_collapse: { all_positions_lte: 2, forced_modifier: 0.70 }
+    ai_tailwind:       { all_positions_gte: 9, forced_modifier: 1.15 }
+
+grades:
+  - { grade: "A+", min: 90, max: 100, label: "AI Accelerated",  action: "invest aggressively" }
+  - { grade: "A",  min: 80, max: 89,  label: "AI Resilient",    action: "thrive in the AI era" }
+  - { grade: "B+", min: 70, max: 79,  label: "AI Ready",        action: "fundamentally sound" }
+  - { grade: "B",  min: 60, max: 69,  label: "AI Adaptable",    action: "significant changes required within 12–18 months" }
+  - { grade: "C+", min: 50, max: 59,  label: "AI Exposed",      action: "serious strategic rethinking" }
+  - { grade: "C",  min: 40, max: 49,  label: "AI Vulnerable",   action: "core business at risk" }
+  - { grade: "D",  min: 25, max: 39,  label: "AI Threatened",   action: "fundamental pivot required" }
+  - { grade: "F",  min: 0,  max: 24,  label: "AI Terminal",     action: "business model will not survive" }
+
+category_half_life_months:
+  content_production: 6
+  data_analysis: 9
+  customer_support: 12
+  software_development: 18
+  legal_research: 18
+  financial_advisory: 24
+  physical_services: 60
