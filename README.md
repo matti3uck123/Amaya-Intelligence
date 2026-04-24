@@ -4,12 +4,16 @@ The rating pipeline behind Amaya Intelligence. Deterministic scoring core,
 document-ingest layer, and (soon) evidence-linked dimension agents for
 AI-durability ratings of operating companies.
 
-**Current status: Sessions 1–3 complete.**
+**Current status: Sessions 1–4 complete.**
 
 ```
  Data room ──▶ Ingest (Session 2) ──▶ Dimension agents (Session 3) ──▶ Scoring (Session 1) ──▶ Rating
     files         text + sections          LLM-produced scores           deterministic        sealed
                                                                           math + CBs          bundle
+                         ▲
+                         │                   Session 4 wraps the whole pipeline in a FastAPI
+                         │                   service with SSE progress streaming — the dashboard
+                         └──── `amaya serve` ◄── (Session 5) talks to this backend.
 ```
 
 ## What's here
@@ -34,8 +38,15 @@ Amaya Intelligence/
 │   │   ├── dimension.py       # score_dimension() — one dimension agent
 │   │   ├── chain.py           # score_chain_position() — one chain agent
 │   │   └── orchestrator.py    # rate() — runs all 16 agents concurrently
-│   └── cli.py                 # `amaya score|verify|methodology|ingest|rate`
-├── tests/                     # 99 tests — scoring + ingest + agents
+│   ├── api/                   # Session 4: FastAPI service with SSE progress
+│   │   ├── app.py             # create_app() — health, methodology, verify
+│   │   ├── ratings.py         # POST/GET /ratings + SSE event stream
+│   │   ├── runner.py          # async background job runner
+│   │   ├── jobs.py            # in-memory registry + event bus
+│   │   ├── deps.py            # DI: completion, classifier, registry
+│   │   └── schemas.py         # API request/response DTOs
+│   └── cli.py                 # `amaya score|verify|methodology|ingest|rate|serve`
+├── tests/                     # 126 tests — scoring + ingest + agents + API
 └── examples/
     ├── colabor_input.json     # sample pre-scored rating input
     └── sample_dataroom/       # 11 synthetic Colabor data-room documents
@@ -47,8 +58,19 @@ Amaya Intelligence/
 python -m venv .venv && source .venv/bin/activate
 pip install -e '.[dev]'
 
-# Run the full test suite (99 tests)
+# Run the full test suite (126 tests)
 pytest -v
+
+# --- Session 4: run the full HTTP backend ---
+
+export ANTHROPIC_API_KEY=sk-ant-...
+amaya serve --ledger ./ledger --port 8000
+# OpenAPI: http://127.0.0.1:8000/docs
+# POST /ratings            (multipart upload of data-room files)
+# POST /ratings/from-path  (JSON body, rate a path on the server)
+# GET  /ratings/{id}       (poll status + final rating)
+# GET  /ratings/{id}/events (SSE — live progress across 16 agents)
+# POST /verify             (recompute hash on a sealed bundle)
 
 # --- Session 3: end-to-end rating from a data room ---
 
@@ -136,9 +158,30 @@ Production uses `AnthropicCompletion` (Claude Sonnet 4.6 with forced
 tool_choice); tests use `StubCompletion` with a user-supplied responder. Every
 agent test runs with zero network calls.
 
+## The API layer (Session 4)
+
+FastAPI on top of the rating pipeline. Every rating runs as an async
+background task; progress streams over Server-Sent Events so a dashboard
+(or `curl -N`) sees each of the 16 agents fire in real time.
+
+Key design choices:
+
+- **In-memory job registry.** The ledger on disk is the durable record
+  of a rating — everything else is ephemeral session state. No database
+  to admin for the demo.
+- **SSE with history replay.** Every subscriber gets the full event
+  history first, then the live tail. Reconnecting the dashboard mid-run
+  doesn't miss anything; connecting after completion still gets every
+  progress event so the UI can render a full timeline.
+- **DI-overridable Completion.** The same `Completion` protocol used by
+  the agents flows through FastAPI `Depends`, so every API test runs
+  with `StubCompletion` — no API key, no network, deterministic.
+- **Upload or from-path.** `POST /ratings` takes multipart files;
+  `POST /ratings/from-path` takes a server-local path — the same
+  shortcut the CLI uses, convenient for demos.
+
 ## Roadmap
 
-- **Session 4 — FastAPI backend.** REST + SSE for live progress.
 - **Session 5 — Next.js dashboard.** Upload flow, rating detail page,
   evidence explorer, provenance verify button.
 - **Session 6 — Demo polish.** Pre-loaded flagship ratings, PDF leave-behind

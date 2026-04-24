@@ -6,6 +6,8 @@ routes) so the wiring is discoverable and overridable.
 """
 from __future__ import annotations
 
+from fastapi import HTTPException
+
 from amaya.agents.completion import AnthropicCompletion, Completion
 from amaya.api.jobs import JobRegistry
 from amaya.ingest.classifier import Classifier, KeywordClassifier
@@ -14,11 +16,17 @@ from amaya.ingest.classifier import Classifier, KeywordClassifier
 def get_completion() -> Completion:
     """Production default: real Anthropic client.
 
-    Tests override this with StubCompletion. Raises at request time if
-    ANTHROPIC_API_KEY is missing — that's the right moment to fail,
-    not at app startup (some endpoints don't need Claude).
+    Tests override this with StubCompletion. Returns a clean 503 rather
+    than a 500 trace when the API key is missing, so the dashboard can
+    show a setup hint instead of a scary error.
     """
-    return AnthropicCompletion()
+    try:
+        return AnthropicCompletion()
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=str(exc),
+        ) from exc
 
 
 def get_classifier() -> Classifier:

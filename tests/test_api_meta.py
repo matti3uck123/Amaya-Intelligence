@@ -27,8 +27,9 @@ def test_methodology_returns_v1(api_client) -> None:
     assert r.status_code == 200
     body = r.json()
     assert body["version"] == "1.0.0"
-    assert "dimensions" in body["raw"]
+    assert "layers" in body["raw"]
     assert "circuit_breakers" in body["raw"]
+    assert "grades" in body["raw"]
 
 
 def test_verify_roundtrip(api_client, tmp_path: Path) -> None:
