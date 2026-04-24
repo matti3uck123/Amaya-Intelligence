@@ -4,16 +4,17 @@ The rating pipeline behind Amaya Intelligence. Deterministic scoring core,
 document-ingest layer, and (soon) evidence-linked dimension agents for
 AI-durability ratings of operating companies.
 
-**Current status: Sessions 1–4 complete.**
+**Current status: Sessions 1–5 complete.**
 
 ```
  Data room ──▶ Ingest (Session 2) ──▶ Dimension agents (Session 3) ──▶ Scoring (Session 1) ──▶ Rating
     files         text + sections          LLM-produced scores           deterministic        sealed
                                                                           math + CBs          bundle
-                         ▲
-                         │                   Session 4 wraps the whole pipeline in a FastAPI
-                         │                   service with SSE progress streaming — the dashboard
-                         └──── `amaya serve` ◄── (Session 5) talks to this backend.
+                         ▲                                                                        │
+                         │                   Session 4 wraps the pipeline in a FastAPI            │
+                         │                   service with SSE progress streaming.                 ▼
+                         └──── `amaya serve` ◄──── Session 5 Next.js dashboard (dashboard/)
+                                                   talks to the backend over REST + SSE.
 ```
 
 ## What's here
@@ -46,6 +47,13 @@ Amaya Intelligence/
 │   │   ├── deps.py            # DI: completion, classifier, registry
 │   │   └── schemas.py         # API request/response DTOs
 │   └── cli.py                 # `amaya score|verify|methodology|ingest|rate|serve`
+├── dashboard/                 # Session 5: Next.js 14 App Router + Tailwind
+│   ├── app/
+│   │   ├── page.tsx           # home — auto-refreshing rating list
+│   │   ├── new/page.tsx       # upload flow (drag-drop + from-path)
+│   │   └── ratings/[id]/page.tsx  # live detail with SSE → agent grid → final report
+│   ├── components/            # GradeBadge, AgentGrid, DimensionDetail, ChainChart…
+│   └── lib/                   # typed API client, SSE hook, format helpers
 ├── tests/                     # 126 tests — scoring + ingest + agents + API
 └── examples/
     ├── colabor_input.json     # sample pre-scored rating input
@@ -60,6 +68,18 @@ pip install -e '.[dev]'
 
 # Run the full test suite (126 tests)
 pytest -v
+
+# --- Session 5: run the dashboard + backend together ---
+
+# Terminal 1 — API
+export ANTHROPIC_API_KEY=sk-ant-...
+amaya serve --ledger ./ledger --port 8000
+
+# Terminal 2 — dashboard (first run only: cd dashboard && npm install)
+cd dashboard && npm run dev
+# Open http://127.0.0.1:3000
+# → "New rating" drops files in, opens the live detail page,
+#   and watches the 16 agents fire one tile at a time over SSE.
 
 # --- Session 4: run the full HTTP backend ---
 
@@ -180,10 +200,36 @@ Key design choices:
   `POST /ratings/from-path` takes a server-local path — the same
   shortcut the CLI uses, convenient for demos.
 
+## The dashboard (Session 5)
+
+A Next.js 14 App Router SPA in `dashboard/`. Talks to the FastAPI backend over
+REST + SSE — no server-side rendering of rating data, no database reads, no
+duplicated types on the server side. Under 1.5k LOC of TypeScript.
+
+Key design choices:
+
+- **Hand-maintained types.** `dashboard/lib/types.ts` mirrors the Pydantic
+  schemas by hand rather than through openapi-codegen. The API surface is
+  ~6 endpoints and stable; a single readable types file is worth more at
+  demo time than a generator pipeline.
+- **`useRatingStream` SSE hook.** Primes itself with one REST fetch of
+  `/ratings/{id}` so a page reload after completion shows the final grade
+  instantly instead of flashing through pending→done. Then it subscribes
+  to the SSE stream and reduces each event into a `StreamState`.
+- **Agent grid is the centerpiece.** The 12 dimension agents are grouped
+  by their scoring layer (External 40% / Internal 35% / Adaptive 25%);
+  the 4 chain agents sit below. Each tile glows while running and shows
+  the score when done — the same shape whether the job is live, replayed
+  from history, or reopened a week later.
+- **Two entry points.** Drag-drop upload (multipart → tempdir) for a
+  cold-open demo, and from-path for when a data room already sits next
+  to the API host.
+- **Circuit breakers are loud.** A triggered CB renders a red banner
+  above the dimension detail with the specific cap it applied — the
+  one thing a demo viewer should never miss.
+
 ## Roadmap
 
-- **Session 5 — Next.js dashboard.** Upload flow, rating detail page,
-  evidence explorer, provenance verify button.
 - **Session 6 — Demo polish.** Pre-loaded flagship ratings, PDF leave-behind
   generator (WeasyPrint), landing page, one-click "reset demo."
 
