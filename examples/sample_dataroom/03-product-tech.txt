@@ -1,0 +1,20 @@
+Product and Technology Platform
+
+Our core product is a foodservice distribution platform combining catalog,
+ordering, delivery routing, and receivables functions. We operate on a
+hybrid tech stack: SAP S/4HANA ERP, custom microservices for order
+intake and route optimization, and a PostgreSQL database layer.
+
+Architecture: Three regional fulfillment hubs (Montreal, Toronto, Halifax)
+connected to a central order-management platform. We expose limited B2B
+integration via EDI and a partner API.
+
+Feature set for customers: catalog search, inventory availability, standing
+orders, delivery tracking, and invoicing. No self-service onboarding; our
+sales representatives provision every account.
+
+Engineering team: 28 FTEs split between platform (14), data (6), and
+infrastructure (8). We run on AWS with Datadog observability.
+
+Machine learning: demand forecasting model in production (gradient-boosted
+trees on ~3 years of SKU-level order history). No generative AI deployed.

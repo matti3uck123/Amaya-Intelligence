@@ -1,29 +1,38 @@
-# Amaya ADI — Deterministic Scoring Core
+# Amaya ADI — AI Durability Index Rating Pipeline
 
-The heart of the AI Durability Index rating pipeline. No LLM, no external
-services, no randomness. Same input + same methodology version → same output,
-auditable three years later.
+The rating pipeline behind Amaya Intelligence. Deterministic scoring core,
+document-ingest layer, and (soon) evidence-linked dimension agents for
+AI-durability ratings of operating companies.
 
-This is **Session 1 of the Path A build** (pure OSS, no paid APIs). It ships
-the deterministic layer of the architecture brief's subsystem 05 (Scoring
-Engine) and subsystem 07 (review → provenance), plus the versioned
-methodology registry from section 05 of the brief.
+**Current status: Sessions 1–2 complete.**
+
+```
+ Data room ──▶ Ingest (Session 2) ──▶ Dimension agents (Session 3) ──▶ Scoring (Session 1) ──▶ Rating
+    files         text + sections          LLM-produced scores           deterministic        sealed
+                                                                          math + CBs          bundle
+```
 
 ## What's here
 
 ```
-Amaya/
+Amaya Intelligence/
 ├── methodology/
 │   └── v1.0.yaml              # dimension weights, CBs, grade bands, chain modifier
 ├── amaya/
-│   ├── schemas.py             # Pydantic models (RatingInput, Rating, ScoringResult)
+│   ├── schemas.py             # Pydantic contracts (RatingInput, Rating, EvidenceRef)
 │   ├── methodology.py         # YAML registry loader
 │   ├── scoring.py             # deterministic score() function
 │   ├── provenance.py          # sealed bundles, WORM files, hash chain
-│   └── cli.py                 # `amaya score|verify|methodology`
-├── tests/                     # pytest — every CB, every grade boundary
+│   ├── ingest/                # Session 2: documents → classified evidence
+│   │   ├── sections.py        # 12-section data-room taxonomy
+│   │   ├── extract.py         # pdfplumber / python-docx / txt → chunks
+│   │   ├── classifier.py      # KeywordClassifier + AnthropicClassifier
+│   │   └── pipeline.py        # ingest(path) orchestrator
+│   └── cli.py                 # `amaya score|verify|methodology|ingest`
+├── tests/                     # 67 tests — scoring core + ingest pipeline
 └── examples/
-    └── colabor_input.json     # sample rating input
+    ├── colabor_input.json     # sample pre-scored rating input
+    └── sample_dataroom/       # 11 synthetic Colabor data-room documents
 ```
 
 ## Quickstart
@@ -32,19 +41,25 @@ Amaya/
 python -m venv .venv && source .venv/bin/activate
 pip install -e '.[dev]'
 
-# Run the full test suite
+# Run the full test suite (67 tests)
 pytest -v
 
-# Score the Colabor example
+# --- Session 2: ingest a data room ---
+
+# Classify every doc in the sample data room (keyword-based, zero cost)
+amaya ingest examples/sample_dataroom
+
+# Write the structured output to disk for the next stage
+amaya ingest examples/sample_dataroom --out evidence.json
+
+# Use Claude Haiku instead (set ANTHROPIC_API_KEY first)
+amaya ingest examples/sample_dataroom --classifier claude
+
+# --- Session 1: score a rating ---
+
 amaya score examples/colabor_input.json
-
-# Score and seal into a provenance ledger
 amaya score examples/colabor_input.json --seal ./ledger
-
-# Verify the sealed bundle
 amaya verify adi-2026Q2-colabor-001 --ledger ./ledger
-
-# Dump the active methodology
 amaya methodology
 ```
 
@@ -64,37 +79,54 @@ amaya methodology
 
 4. **Provenance bundles are immutable.** Once sealed, the JSON is chmod 444
    and its SHA-256 is appended to a hash chain. `verify()` recomputes the
-   hash; any tampering fails verification. This is the local-filesystem
-   equivalent of S3 Object Lock + KMS signing called for in the brief.
+   hash; any tampering fails verification.
 
-## What's next (future sessions)
+5. **Ingest is swappable, scoring is not.** The ingest layer produces
+   `EvidenceRef` objects and nothing else — the scoring engine doesn't care
+   whether those came from pdfplumber or a manual analyst upload. Swap
+   classifiers, swap extractors, swap LLMs: the sealing contract is stable.
 
-Session 1 delivers the deterministic core. Remaining work to reach MVP:
+## The 12-section data-room taxonomy (Session 2)
 
-- **Session 2 — Document ingest.** `unstructured` + `pdfplumber` pipeline,
-  12-section data-room classifier (local LLM via Ollama), pgvector storage.
-- **Session 3 — LangGraph dimension agents.** 12 per-dimension agents
-  running against Ollama (Llama 3.3 or Qwen 2.5). Evidence-linked rationale.
-- **Session 4 — Voice interview (best-effort OSS).** Whisper for transcript,
-  librosa/opensmile for prosody features. No real-time conversational AI
-  without paid TTS.
-- **Session 5 — Next.js frontend.** Upload flow, data-room checklist,
-  rating view, analyst workbench.
-- **Session 6 — Analyst workbench.** Dual sign-off, CMO escalation, review
-  queue, audit log UI.
-- **Session 7 — Report generators.** `python-pptx` IC deck, WeasyPrint PDF
-  rating certificate, JSON API payload.
+Every document chunk classified into exactly one of:
 
-Everything in Session 1 is designed to stay untouched through those sessions
-— the scoring engine is the contract every downstream stage writes to.
+| Code  | Section              | Feeds dimensions |
+|-------|----------------------|------------------|
+| CORP  | Corporate Overview   | DIM, MCS         |
+| FIN   | Financials           | RMV, CPS         |
+| PROD  | Product & Technology | VPR, TSR, ANCR   |
+| CUST  | Customers & Contracts| CPS, RMV, ANCR   |
+| COMP  | Competitive Landscape| CLS, VPR         |
+| TEAM  | Leadership & Team    | LAL, WCI         |
+| OPS   | Operations & Supply  | SCAE, WCI        |
+| LEGAL | Legal, IP, Regulatory| DIM, VPR         |
+| MKT   | Market Analysis      | MCS, CPS         |
+| AI    | AI Strategy & Roadmap| LAL, SPS, TSR, ANCR |
+| GOV   | Governance & Board   | SPS              |
+| OTHER | Uncategorized        | —                |
 
-## The cost-to-run story
+Session 3 dimension agents pull evidence by section: the MCS agent reads
+MKT + COMP chunks; the RMV agent reads FIN + CUST; and so on.
 
-Running `amaya score` on a prepared input costs nothing. The only money
-changes hands when dimension scores need to be produced by an LLM
-(Session 3). At that point you choose between:
+## Roadmap
 
-- Ollama + local model (free; noticeably weaker reasoning)
-- Anthropic Claude or OpenAI via paid API (~$1–3 per rating)
+- **Session 3 — Dimension agents.** LangGraph orchestrator + 12 per-dimension
+  Claude Sonnet 4.6 agents + 4 chain-position agents. Output: full
+  `RatingInput` the Session 1 engine consumes. End-to-end: `amaya rate ./dataroom`.
+- **Session 4 — FastAPI backend.** REST + SSE for live progress.
+- **Session 5 — Next.js dashboard.** Upload flow, rating detail page,
+  evidence explorer, provenance verify button.
+- **Session 6 — Demo polish.** Pre-loaded flagship ratings, PDF leave-behind
+  generator (WeasyPrint), landing page, one-click "reset demo."
 
-The scoring engine doesn't care which produced the numbers.
+## Cost to run
+
+| Operation                         | Cost                         |
+|-----------------------------------|------------------------------|
+| `amaya score` on prepared input   | Free                         |
+| `amaya ingest` (keyword mode)     | Free                         |
+| `amaya ingest` (Claude Haiku)     | ~$0.01 per ~50-doc data room |
+| Full rating via Session 3 agents  | ~$1–3 per rating             |
+
+The scoring engine doesn't know or care which source produced the dimension
+numbers — swap a free path for a paid path anytime without touching it.

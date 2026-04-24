@@ -1,0 +1,23 @@
+Operations and Supply Chain
+
+Fulfillment infrastructure: Three distribution warehouses covering Montreal
+(420,000 sq ft), Toronto (280,000 sq ft), and Halifax (95,000 sq ft). Each
+houses dry, refrigerated, and frozen inventory.
+
+Supplier network: ~2,100 upstream producers. Top 50 suppliers represent 38%
+of procurement spend. Supplier contracts negotiated annually; no long-term
+exclusivity arrangements.
+
+Procurement: Purchase order generation is semi-automated via our ERP. Demand
+forecasting feeds a weekly replenishment cycle. Vendor-managed inventory
+pilots underway with three produce suppliers.
+
+Delivery fleet: 420 refrigerated trucks, split roughly 70% owned / 30%
+contracted. Route optimization runs nightly on in-house software; dynamic
+re-routing for same-day orders introduced in 2024.
+
+Last-mile delivery: All routes serviced by in-house drivers. Average drops
+per route: 14. On-time delivery rate: 98.2% over trailing twelve months.
+
+Logistics systems: ERP is SAP S/4HANA. Warehouse management is SAP EWM.
+Transportation management is custom-built on top of Descartes.

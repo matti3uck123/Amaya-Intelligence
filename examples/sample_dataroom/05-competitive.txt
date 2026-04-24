@@ -1,0 +1,24 @@
+Competitive Landscape
+
+Primary competitors in the Canadian foodservice distribution category:
+
+Sysco Canada — national broadline, ~$5B Canadian revenue. Investing heavily
+in AI-driven customer platforms (Sysco Intelligent Kitchen initiative) and
+digital self-service. Our principal competitor in the independent-restaurant
+segment. Sysco has a commanding market share on chain accounts.
+
+Gordon Food Service (GFS) — also national, similar scale. Positioning
+overlaps on institutional and healthcare. GFS has announced a partnership
+with a generative-AI vendor for menu engineering — a differentiation
+challenge.
+
+Specialty regional distributors — dozens of smaller competitors focused on
+single product categories (seafood, bakery, Italian imports). Each captures
+2-5% share in their niche.
+
+Market positioning: We compete primarily on local service depth and
+Quebec-market specialization versus the national incumbents. Our
+differentiation is rep relationships and regional product assortment —
+moat characteristics that AI-mediated ordering challenges directly.
+
+Versus the Gartner Supply Chain Top 25, we lag on every technology metric.

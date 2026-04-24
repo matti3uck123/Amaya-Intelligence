@@ -1,0 +1,26 @@
+AI Strategy and Roadmap
+
+Stated AI strategy: Management has published an AI transformation roadmap
+in the 2025 annual report. Three-pillar plan: (1) demand forecasting
+enhancement, (2) sales rep productivity tooling, (3) customer self-service
+ordering. No timeline commitments on pillar (3).
+
+Deployed AI: Demand forecasting model described in the product section is
+the only production AI system. No generative AI, no LLMs, no foundation
+models currently in use. No AI-native client onboarding or agent-facing
+APIs exposed.
+
+RAG / retrieval augmented systems: None in production.
+
+MLOps maturity: Basic. Model retraining is a manual quarterly process. No
+experiment tracking, no model registry, no automated deployment pipeline.
+Ownership sits entirely within the 6-person data team.
+
+AI governance policy: Drafted Q4 2025, not yet ratified. Covers employee
+use of public LLM tools. Does not address enterprise AI procurement or
+model-risk management.
+
+AI-native positioning: The company does not describe itself or its products
+as AI-native or AI-first. Leadership acknowledges gap versus US competitors
+(Sysco Intelligent Kitchen, GFS GenAI menu engineering) but has not made
+material capital commitments to close it.

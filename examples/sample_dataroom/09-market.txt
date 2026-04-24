@@ -1,0 +1,29 @@
+Market Analysis and Industry Context
+
+Total addressable market (TAM): Canadian foodservice distribution represents
+a $95B annual market. Broadline distribution is ~$62B of that (65%);
+specialty distribution is the balance.
+
+Serviceable addressable market (SAM): Our geographic focus (Quebec, Ontario,
+Maritimes) represents ~$38B of the TAM. Independent restaurants within that
+footprint are ~$14B.
+
+Serviceable obtainable market (SOM): Realistic share ceiling of ~$1.8B
+(13% of the independent-restaurant SAM) based on fleet and warehouse
+capacity without major expansion.
+
+Industry report references: Technomic 2025 Canadian Foodservice Landscape;
+NACS State of the Industry Report; IBISWorld Canadian Food Wholesaling
+report (OD4512CA).
+
+Category growth: Canadian foodservice category trend of ~2% CAGR historically;
+independent-restaurant subsegment has negative growth of -1.3% in 2024 as
+demographic and cost pressures compress margins.
+
+Sector analysis: Three-year outlook shows continued consolidation pressure.
+Category-level trend toward direct supplier-to-operator relationships
+mediated by AI ordering agents represents the most material structural
+headwind facing traditional distributors.
+
+Demographic: End-consumer demand (diners eating at independent restaurants)
+expected to remain stable. The question is who supplies those restaurants.

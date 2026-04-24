@@ -1,0 +1,24 @@
+Legal, Intellectual Property, and Regulatory Summary
+
+Intellectual property portfolio: No registered patents. Five trademarks
+covering the Colabor wordmark and logo in Canada and the United States.
+No copyrighted software products; all proprietary systems are trade-secret
+protected under standard employee and contractor IP assignments.
+
+Licensing: Enterprise software licenses for SAP S/4HANA (perpetual,
+maintenance annual), Microsoft E5 (subscription), Tableau. All licenses
+assignable or transferable in the event of a change of control.
+
+Litigation: One active wrongful-dismissal claim (estimated exposure <$300K).
+No commercial or IP litigation outstanding.
+
+Regulatory: Operations subject to provincial food-safety regulations (MAPAQ
+in Quebec, OMAFRA in Ontario). Annual CFIA inspections on all fulfillment
+sites — most recent inspection passed without findings.
+
+Data privacy: Customer data handling governed by PIPEDA (Canada) and Quebec
+Law 25. Privacy policy last updated Q3 2025. No material data-breach
+incidents in the trailing 36 months.
+
+Compliance: SOX-equivalent controls (Canadian NI 52-109 certification)
+given TSX listing. Annual external audit by Deloitte.

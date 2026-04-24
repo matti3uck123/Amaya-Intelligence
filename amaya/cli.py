@@ -1,9 +1,12 @@
 """`amaya` CLI — the shell entry point for the deterministic pipeline.
 
-  amaya score <input.json>                 # compute rating, print to stdout
-  amaya score <input.json> --seal <dir>    # also write provenance bundle
-  amaya verify <rating_id> --ledger <dir>  # recompute bundle hash
-  amaya methodology                         # dump active methodology
+  amaya score <input.json>                      # compute rating
+  amaya score <input.json> --seal <dir>         # also write provenance bundle
+  amaya verify <rating_id> --ledger <dir>       # recompute bundle hash
+  amaya methodology                              # dump active methodology
+  amaya ingest <data-room-path>                 # extract + classify documents
+  amaya ingest <path> --classifier claude       # use Claude Haiku (needs key)
+  amaya ingest <path> --out evidence.json       # write result to file
 """
 from __future__ import annotations
 
@@ -61,6 +64,38 @@ def cmd_methodology(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ingest(args: argparse.Namespace) -> int:
+    from .ingest import AnthropicClassifier, KeywordClassifier, ingest
+
+    if args.classifier == "claude":
+        classifier = AnthropicClassifier()
+    else:
+        classifier = KeywordClassifier()
+
+    result = ingest(args.path, classifier=classifier)
+    payload = result.model_dump(mode="json")
+    payload["summary"] = result.summary()
+
+    if args.out:
+        Path(args.out).write_text(json.dumps(payload, indent=2))
+        print(
+            json.dumps(
+                {
+                    "source_path": result.source_path,
+                    "files_ingested": result.files_ingested,
+                    "files_skipped": result.files_skipped,
+                    "chunks_total": len(result.chunks),
+                    "summary": result.summary(),
+                    "written_to": args.out,
+                },
+                indent=2,
+            )
+        )
+    else:
+        print(json.dumps(payload, indent=2))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="amaya", description="ADI rating engine")
     p.add_argument("--version", action="version", version=f"amaya {__version__}")
@@ -80,6 +115,17 @@ def build_parser() -> argparse.ArgumentParser:
     m = sub.add_parser("methodology", help="dump active methodology")
     m.add_argument("--version", default="v1.0")
     m.set_defaults(func=cmd_methodology)
+
+    i = sub.add_parser("ingest", help="extract + classify documents in a data room")
+    i.add_argument("path", help="file or directory to ingest")
+    i.add_argument(
+        "--classifier",
+        choices=["keyword", "claude"],
+        default="keyword",
+        help="classifier backend (keyword is free/offline; claude needs ANTHROPIC_API_KEY)",
+    )
+    i.add_argument("--out", help="write IngestResult JSON to this file")
+    i.set_defaults(func=cmd_ingest)
 
     return p
 
